@@ -40,25 +40,25 @@ def random_dot(tkinter_canvas, tk_width, tk_height):
     
     return random_width, random_height
 
-def neural_model(dummy_sample):
+def neural_model(dummy_sample, base_channels=8, dense_per_layer=50):
     
     print("About to initialise a neural network with input shape: ", dummy_sample.shape)
     
     visible = Input(shape=(dummy_sample.shape))
     
-    c11 = Conv2D(8, 3)(visible)
-    c12 = Conv2D(8, 3)(c11)
-    p1 = Conv2D(16, 1, strides=2)(c12)
-    c21 = Conv2D(16, 3)(p1)
-    c22 = Conv2D(16, 3)(c21)
-    p2 = Conv2D(32, 1, strides=2)(c22)
+    c11 = Conv2D(base_channels, 3)(visible)
+    c12 = Conv2D(base_channels, 3)(c11)
+    p1 = Conv2D(base_channels * 2, 1, strides=2)(c12)
+    c21 = Conv2D(base_channels * 2, 3)(p1)
+    c22 = Conv2D(base_channels * 2, 3)(c21)
+    p2 = Conv2D(base_channels * 4, 1, strides=2)(c22)
     #c31 = Conv2D(8, 3)(p2)
     #c32 = Conv2D(8, 3)(c31)
     #p3 = Conv2D(16, 1, strides=2)(c32)
     
     f1 = Flatten()(p2)
-    d1 = Dense(50, activation="relu")(f1)
-    d2 = Dense(50, activation="relu")(d1)
+    d1 = Dense(dense_per_layer, activation="relu")(f1)
+    d2 = Dense(dense_per_layer, activation="relu")(d1)
     output = Dense(2)(d2)
     
     model = Model(inputs=visible, outputs=output)
