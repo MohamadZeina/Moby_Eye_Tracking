@@ -44,6 +44,8 @@ def neural_model(dummy_sample, base_channels=8, dense_per_layer=50):
     
     print("About to initialise a neural network with input shape: ", dummy_sample.shape)
     
+    l2_reg = regularizers.l2(0.0001)
+
     visible = Input(shape=(dummy_sample.shape))
     
     c11 = Conv2D(base_channels, 3)(visible)
@@ -57,8 +59,8 @@ def neural_model(dummy_sample, base_channels=8, dense_per_layer=50):
     #p3 = Conv2D(16, 1, strides=2)(c32)
     
     f1 = Flatten()(p2)
-    d1 = Dense(dense_per_layer, activation="relu")(f1)
-    d2 = Dense(dense_per_layer, activation="relu")(d1)
+    d1 = Dense(dense_per_layer, activation="relu", kernel_regularizer=l2_reg)(f1)
+    d2 = Dense(dense_per_layer, activation="relu", kernel_regularizer=l2_reg)(d1)
     output = Dense(2)(d2)
     
     model = Model(inputs=visible, outputs=output)
