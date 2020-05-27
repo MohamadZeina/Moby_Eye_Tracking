@@ -44,7 +44,7 @@ def neural_model(dummy_sample, base_channels=8, dense_per_layer=50):
     
     print("About to initialise a neural network with input shape: ", dummy_sample.shape)
     
-    l2_reg = regularizers.l2(0.0001)
+    l2_reg = keras.regularizers.l2(0.0001)
 
     visible = Input(shape=(dummy_sample.shape))
     
