@@ -1,0 +1,8 @@
+Please copy and paste this file into any folder of data you are adding to the project. Do not delete this text, but fill in the details below.
+
+Laptop model: 
+Monitor model if not using laptop screen: 
+Screen resolution (pixel height x width, e.g. 1080 x 1920): 
+Screen size (mm height x width, e.g. 152 x 321): 
+Webcam make and model if stand-alone device: 
+Horizontal webcam position (mm): 
