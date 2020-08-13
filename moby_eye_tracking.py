@@ -69,7 +69,7 @@ def neural_model(dummy_sample, base_channels=8, dense_per_layer=50, conv_padding
     
     return model
 
-def extract_facial_features(frame, display=False):
+def extract_facial_features(frame, get_gradients=False, display=False):
     
     # Basic code for facial landmark extraction from webcam from:
     # https://elbruno.com/2019/05/29/vscode-lets-do-some-facerecognition-with-20-lines-in-python-3-n/    
@@ -83,34 +83,48 @@ def extract_facial_features(frame, display=False):
     border_height = 10
     border_width = 15
     
-    # Creat linear ingredients to bundle with the eye data
-    grad_x = np.zeros(frame_copy.shape[:2], dtype=np.float)
-    grad_y = np.zeros(frame_copy.shape[:2], dtype=np.float)
+    # Creat linear gradients to bundle with the eye data
+    if get_gradients:
+        grad_x = np.zeros(frame_copy.shape[:2], dtype=np.float)
+        grad_y = np.zeros(frame_copy.shape[:2], dtype=np.float)
     
-    for i in range(border_height * 2):
-        grad_x[i, :] = i / (border_height * 2)
+        for i in range(border_height * 2):
+            grad_x[i, :] = i / (border_height * 2)
         
-    for j in range(border_width * 2):
-        grad_y[:, j] = j / (border_width * 2)
+        for j in range(border_width * 2):
+            grad_y[:, j] = j / (border_width * 2)
     
     try:
+        # Locate the left eye
         left_eye = np.mean(np.array(face_landmarks_list[0]["left_eye"]), axis=0, dtype=int)
         left_eye_region = bw_frame[left_eye[1] - border_height: left_eye[1] + border_height,
                                    left_eye[0] - border_width: left_eye[0] + border_width]
-        left_eye_x_grad = grad_x[left_eye[1] - border_height: left_eye[1] + border_height,
-                                 left_eye[0] - border_width: left_eye[0] + border_width]
-        left_eye_y_grad = grad_y[left_eye[1] - border_height: left_eye[1] + border_height,
-                                 left_eye[0] - border_width: left_eye[0] + border_width]
+
+        if get_gradients:
+            left_eye_x_grad = grad_x[left_eye[1] - border_height: left_eye[1] + border_height,
+                                     left_eye[0] - border_width: left_eye[0] + border_width]
+            left_eye_y_grad = grad_y[left_eye[1] - border_height: left_eye[1] + border_height,
+                                     left_eye[0] - border_width: left_eye[0] + border_width]
         
         left_eye_flattened = left_eye_region.reshape(1,-1)[0]
     
+        # Locate the right eye
         right_eye = np.mean(np.array(face_landmarks_list[0]["right_eye"]), axis=0, dtype=int)
         right_eye_region = bw_frame[right_eye[1] - border_height: right_eye[1] + border_height,
                                     right_eye[0] - border_width: right_eye[0] + border_width]
-        right_eye_x_grad = grad_x[right_eye[1] - border_height: right_eye[1] + border_height,
-                                  right_eye[0] - border_width: right_eye[0] + border_width]
-        right_eye_y_grad = grad_y[right_eye[1] - border_height: right_eye[1] + border_height,
-                                  right_eye[0] - border_width: right_eye[0] + border_width]
+
+        if get_gradients:
+            right_eye_x_grad = grad_x[right_eye[1] - border_height: right_eye[1] + border_height,
+                                      right_eye[0] - border_width: right_eye[0] + border_width]
+            right_eye_y_grad = grad_y[right_eye[1] - border_height: right_eye[1] + border_height,
+                                      right_eye[0] - border_width: right_eye[0] + border_width]
+
+        if not get_gradients:
+            left_eye_x_grad = np.zeros(left_eye_region.shape[:2])
+            left_eye_y_grad = np.zeros(left_eye_region.shape[:2])
+
+            right_eye_x_grad = np.zeros(right_eye_region.shape[:2])
+            right_eye_y_grad = np.zeros(right_eye_region.shape[:2])
         
         right_eye_flattened = right_eye_region.reshape(1,-1)[0]
             
@@ -263,9 +277,6 @@ def train_retrospectively(path_to_images, model):
                        
     return training_X, training_y
 
-
-
-    # Functions that leverage the above to do something useful
 def train_and_preview(pretrained_model=None):
     ########## Universal Initialisation ##########
     counter = 0
@@ -366,6 +377,7 @@ class ScreenshotGenerator(keras.utils.Sequence):
     def __load__(self, index):
         """Returns and processes a single sample, in conjunction with __getitem__"""
         
+        time_image_requested = time.time()
         # Ensures that if an image is picked without a succesfully detected face, 
         #  it looks for another random one to replace it
         got_good_image = False
@@ -378,6 +390,8 @@ class ScreenshotGenerator(keras.utils.Sequence):
             image = cv2.imread(file)
             
             rgb_frame, everything_array, landmark_array, eyes_and_gradients = extract_facial_features(image)
+            #print("Extracted features in: ", time.time() - time_image_requested)
+
             coordinates = [float(coordinate) for coordinate in filename[1: -5].split(" ") if len(coordinate) != 0]
             
             X = eyes_and_gradients
@@ -392,15 +406,22 @@ class ScreenshotGenerator(keras.utils.Sequence):
         return X, y
     
     def __getitem__(self, batch):
-        
-        batch_X = [self.__load__(index)[0] for index in 
-                   range((batch * self.batch_size), (batch + 1) * self.batch_size)]
-        batch_y = [self.__load__(index)[1] for index in 
-                   range((batch * self.batch_size), (batch + 1) * self.batch_size)]
+
+        time_batch_requested = time.time()
+
+        batch = [self.__load__(index) for index in
+                 range((batch * self.batch_size), (batch + 1) * self.batch_size)]
+
+        batch_X = [data_point[0] for data_point in batch]
+        batch_y = [data_point[1] for data_point in batch]
+
         
         batch_X = np.array(batch_X)
         batch_y = np.array(batch_y)
         
+        time_to_get_batch = time.time() - time_batch_requested
+        #print("Got batch in: ", time_to_get_batch)
+
         return batch_X, batch_y
 
     def on_epoch_end(self):
