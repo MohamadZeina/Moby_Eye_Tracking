@@ -362,19 +362,20 @@ def train_and_preview(pretrained_model=None):
 
 class ScreenshotGenerator(keras.utils.Sequence):
     
-    def __init__(self, path_to_images, batch_size=4):
+    def __init__(self, paths_to_images, batch_size=4):
         
-        self.path_to_images = path_to_images
+        self.paths_to_images = paths_to_images
         self.batch_size = batch_size
     
         self.files = []# os.listdir(path_to_images)
         self.filenames = []
         
-        for root, dirs, files in os.walk(path_to_images):
-            for name in files:
-                if name.endswith(".jpg"):
-                    self.files.append(os.path.join(root, name))
-                    self.filenames.append(name)
+        for path_to_images in paths_to_images:
+            for root, dirs, files in os.walk(path_to_images):
+                for name in files:
+                    if name.endswith(".jpg"):
+                        self.files.append(os.path.join(root, name))
+                        self.filenames.append(name)
     
     def __len__(self):
         
