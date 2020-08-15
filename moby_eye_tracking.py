@@ -73,7 +73,12 @@ def extract_facial_features(frame, get_gradients=False, display=False):
     
     # Basic code for facial landmark extraction from webcam from:
     # https://elbruno.com/2019/05/29/vscode-lets-do-some-facerecognition-with-20-lines-in-python-3-n/    
-    rgb_frame = frame[:, :, ::-1].copy()
+    try:
+        rgb_frame = frame[:, :, ::-1].copy()
+    except TypeError:
+        print("Problem extracting data from frame.")
+        return [], [], [], []
+
     frame_copy = frame.copy()
     bw_frame = np.mean(rgb_frame, axis=2)
 
@@ -339,7 +344,7 @@ def train_and_preview(pretrained_model=None):
         rgb_frame, landmark_array, eyes_and_gradients, predicted_gaze = predict_gaze(
             video_capture, webcam_resolution, tk_width, tk_height, model, model_type, canvas)
         
-        if counter % 4 == 0 and counter != 0:
+        if counter % 6 == 0 and counter != 0:
             canvas.delete("all")
             
             RFMO, current_target = capture(
@@ -389,7 +394,7 @@ class ScreenshotGenerator(keras.utils.Sequence):
                         
             image = cv2.imread(file)
             
-            rgb_frame, everything_array, landmark_array, eyes_and_gradients = extract_facial_features(image)
+            rgb_frame, everything_array, landmark_array, eyes_and_gradients = extract_facial_features(image, True)
             #print("Extracted features in: ", time.time() - time_image_requested)
 
             coordinates = [float(coordinate) for coordinate in filename[1: -5].split(" ") if len(coordinate) != 0]
