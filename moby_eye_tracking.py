@@ -372,8 +372,9 @@ class ScreenshotGenerator(keras.utils.Sequence):
         
         for root, dirs, files in os.walk(path_to_images):
             for name in files:
-                self.files.append(os.path.join(root, name))
-                self.filenames.append(name)
+                if name.endswith(".jpg"):
+                    self.files.append(os.path.join(root, name))
+                    self.filenames.append(name)
     
     def __len__(self):
         
