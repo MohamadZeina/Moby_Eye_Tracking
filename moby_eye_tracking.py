@@ -17,7 +17,7 @@ from sklearn.preprocessing import StandardScaler
 
 import keras 
 from keras.models import Model
-from keras.layers import Input, concatenate, Conv2D, Dense, MaxPool2D, Flatten 
+from keras.layers import Input, concatenate, Conv2D, Dense, MaxPool2D, Flatten, Dropout
 
 
 # Convenience functions
@@ -40,7 +40,8 @@ def random_dot(tkinter_canvas, tk_width, tk_height):
     
     return random_width, random_height
 
-def neural_model(dummy_sample, base_channels=8, dense_per_layer=50, conv_padding="same"):
+def neural_model(dummy_sample, base_channels=8, dense_per_layer=50, conv_padding="same",
+                 pooling_dropout=0.0, dense_dropout=0.0):
     
     print("About to initialise a neural network with input shape: ", dummy_sample.shape)
     
@@ -51,15 +52,26 @@ def neural_model(dummy_sample, base_channels=8, dense_per_layer=50, conv_padding
     c11 = Conv2D(base_channels, 3, padding=conv_padding)(visible)
     c12 = Conv2D(base_channels, 3, padding=conv_padding)(c11)
     p1 = Conv2D(base_channels * 2, 1, strides=2)(c12)
+    if pooling_dropout:
+        p1 = Dropout(pooling_dropout)(p1)
+
     c21 = Conv2D(base_channels * 2, 3, padding=conv_padding)(p1)
     c22 = Conv2D(base_channels * 2, 3, padding=conv_padding)(c21)
     p2 = Conv2D(base_channels * 4, 1, strides=2)(c22)
+    if pooling_dropout:
+        p2 = Dropout(pooling_dropout)(p2)
+
     c31 = Conv2D(8, 3, padding=conv_padding)(p2)
     c32 = Conv2D(8, 3, padding=conv_padding)(c31)
     p3 = Conv2D(16, 1, strides=2)(c32)
+    if pooling_dropout:
+        p3 = Dropout(pooling_dropout)(p3)
     
     f1 = Flatten()(p3)
     d1 = Dense(dense_per_layer, activation="relu", kernel_regularizer=l2_reg)(f1)
+    if dense_dropout:
+        d1 = Dropout(dense_dropout)(d1)
+
     d2 = Dense(dense_per_layer, activation="relu", kernel_regularizer=l2_reg)(d1)
     output = Dense(2)(d2)
     
