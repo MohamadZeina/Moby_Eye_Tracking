@@ -17,7 +17,8 @@ from sklearn.preprocessing import StandardScaler
 
 import keras 
 from keras.models import Model
-from keras.layers import Input, concatenate, Conv2D, Dense, MaxPool2D, Flatten, Dropout
+from keras.layers import (Input, concatenate, Conv2D, Dense, MaxPool2D, 
+                          Flatten, Dropout, SpatialDropout2D, GaussianNoise)
 
 
 # Convenience functions
@@ -41,25 +42,31 @@ def random_dot(tkinter_canvas, tk_width, tk_height):
     return random_width, random_height
 
 def neural_model(dummy_sample, base_channels=8, dense_per_layer=50, conv_padding="same",
-                 pooling_dropout=0.0, dense_dropout=0.0):
+                 input_noise=0.0, pooling_dropout=0.0, dense_dropout=0.0, spatial_dropout=0.0):
     
     print("About to initialise a neural network with input shape: ", dummy_sample.shape)
     
     l2_reg = keras.regularizers.l2(0.0001)
 
     visible = Input(shape=(dummy_sample.shape))
-    
-    c11 = Conv2D(base_channels, 3, padding=conv_padding)(visible)
+    if input_noise: 
+        input_augmented = GaussianNoise(input_noise)(visible)
+    else:
+        input_augmented = visible
+
+    c11 = Conv2D(base_channels, 3, padding=conv_padding)(input_augmented)
+    if spatial_dropout: c11 = SpatialDropout2D(spatial_dropout)(c11)
     c12 = Conv2D(base_channels, 3, padding=conv_padding)(c11)
+    if spatial_dropout: c12 = SpatialDropout2D(spatial_dropout)(c12)
     p1 = Conv2D(base_channels * 2, 1, strides=2)(c12)
-    if pooling_dropout:
-        p1 = Dropout(pooling_dropout)(p1)
+    if pooling_dropout: p1 = Dropout(pooling_dropout)(p1)
 
     c21 = Conv2D(base_channels * 2, 3, padding=conv_padding)(p1)
+    if spatial_dropout: c21 = SpatialDropout2D(spatial_dropout)(c21)
     c22 = Conv2D(base_channels * 2, 3, padding=conv_padding)(c21)
+    if spatial_dropout: c22 = SpatialDropout2D(spatial_dropout)(c22)
     p2 = Conv2D(base_channels * 4, 1, strides=2)(c22)
-    if pooling_dropout:
-        p2 = Dropout(pooling_dropout)(p2)
+    if pooling_dropout: p2 = Dropout(pooling_dropout)(p2)
 
     c31 = Conv2D(8, 3, padding=conv_padding)(p2)
     c32 = Conv2D(8, 3, padding=conv_padding)(c31)
@@ -362,7 +369,7 @@ def train_and_preview(pretrained_model=None):
         rgb_frame, landmark_array, eyes_and_gradients, predicted_gaze = predict_gaze(
             video_capture, webcam_resolution, tk_width, tk_height, model, model_type, canvas)
         
-        if counter % 6 == 0 and counter != 0:
+        if counter % 8 == 0 and counter != 0:
             canvas.delete("all")
             
             RFMO, current_target = capture(
