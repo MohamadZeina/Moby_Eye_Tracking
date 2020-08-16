@@ -417,12 +417,7 @@ class ScreenshotGenerator(keras.utils.Sequence):
         got_good_image = False
 
         if index % 2 != 0 and self.mirror_augment_all:
-            # Mirror previous sample and return it. For reference, eyes_and_gradients is:
-            #  left_eye_region, left_eye_x_grad, left_eye_y_grad,
-            #  right_eye_region, right_eye_x_grad, right_eye_y_grad
-
-            print("going to mirror images (not implemented yet)")
-
+        
             [left_eye_region, 
              left_eye_x_grad, 
              left_eye_y_grad,
@@ -447,11 +442,8 @@ class ScreenshotGenerator(keras.utils.Sequence):
             right_eye_region = np.flip(right_eye_region, axis=1)
 
             # Mirror the width component of the target
-            #print("y: ", self.y)
             self.mirrored_y = self.y.copy()
             self.mirrored_y[0] = -(self.y[0] - 0.5) + 0.5
-            #print("mirrord_y: ", self.mirrored_y)
-
 
             self.mirrored_X = np.stack((left_eye_region, left_eye_x_grad, left_eye_y_grad,
                                right_eye_region, right_eye_x_grad, right_eye_y_grad), axis=2)
