@@ -311,7 +311,7 @@ def train_and_preview(pretrained_model=None):
     
     # Dummy sample, to help initialising models
     (rgb_frame, dummy_features, 
-     landmark_array, eyes_and_gradients) = extract_facial_features(frame)
+     landmark_array, eyes_and_gradients) = extract_facial_features(frame, True)
     
     model_type = "neural net"
     
@@ -374,12 +374,17 @@ def train_and_preview(pretrained_model=None):
 
 class ScreenshotGenerator(keras.utils.Sequence):
     
-    def __init__(self, paths_to_images, batch_size=4):
+    def __init__(self, paths_to_images, batch_size=4, mirror_augment_all=False):
         
         self.paths_to_images = paths_to_images
         self.batch_size = batch_size
-    
-        self.files = []# os.listdir(path_to_images)
+        self.mirror_augment_all = mirror_augment_all
+
+        if mirror_augment_all and batch_size % 2 != 0:
+            print("When using mirror augmentation, batch size must be an even number")
+            assert False
+
+        self.files = []
         self.filenames = []
         
         for path_to_images in paths_to_images:
@@ -388,7 +393,11 @@ class ScreenshotGenerator(keras.utils.Sequence):
                     if name.endswith(".jpg"):
                         self.files.append(os.path.join(root, name))
                         self.filenames.append(name)
-    
+        
+        if self.mirror_augment_all:
+            self.files = [self.files[i//2] for i in range(len(self.files)*2)]
+            self.filenames = [self.filenames[i//2] for i in range(len(self.filenames)*2)]
+
     def __len__(self):
         
         return len(self.files) // self.batch_size
