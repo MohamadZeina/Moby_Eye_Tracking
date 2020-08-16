@@ -122,9 +122,9 @@ def extract_facial_features(frame, get_gradients=True, display=False):
                                      left_eye[0] - border_width: left_eye[0] + border_width]
             left_eye_y_grad = grad_y[left_eye[1] - border_height: left_eye[1] + border_height,
                                      left_eye[0] - border_width: left_eye[0] + border_width]
-            print("mean number from left eye x gradient is: ", np.mean(left_eye_x_grad))
-            print("mean number from left eye y gradient is: ", np.mean(left_eye_y_grad))
-            print("left eye centre is at: ", left_eye)
+            #print("mean number from left eye x gradient is: ", np.mean(left_eye_x_grad))
+            #print("mean number from left eye y gradient is: ", np.mean(left_eye_y_grad))
+            #print("left eye centre is at: ", left_eye)
         
         left_eye_flattened = left_eye_region.reshape(1,-1)[0]
     
@@ -138,9 +138,9 @@ def extract_facial_features(frame, get_gradients=True, display=False):
                                       right_eye[0] - border_width: right_eye[0] + border_width]
             right_eye_y_grad = grad_y[right_eye[1] - border_height: right_eye[1] + border_height,
                                       right_eye[0] - border_width: right_eye[0] + border_width]
-            print("mean number from right eye x gradient is: ", np.mean(right_eye_x_grad))
-            print("mean number from right eye y gradient is: ", np.mean(right_eye_y_grad))
-            print("right centre is at: ", right_eye)
+            #print("mean number from right eye x gradient is: ", np.mean(right_eye_x_grad))
+            #print("mean number from right eye y gradient is: ", np.mean(right_eye_y_grad))
+            #print("right centre is at: ", right_eye)
 
         if not get_gradients:
             left_eye_x_grad = np.zeros(left_eye_region.shape[:2])
@@ -422,6 +422,41 @@ class ScreenshotGenerator(keras.utils.Sequence):
             #  right_eye_region, right_eye_x_grad, right_eye_y_grad
 
             print("going to mirror images (not implemented yet)")
+
+            [left_eye_region, 
+             left_eye_x_grad, 
+             left_eye_y_grad,
+             right_eye_region, 
+             right_eye_x_grad, 
+             right_eye_y_grad] = [self.X[:, :, i] for i in range(6)]
+
+            # Mirror the eye gradients
+            left_eye_y_grad, right_eye_y_grad = right_eye_y_grad, left_eye_y_grad
+            left_eye_x_grad, right_eye_x_grad = right_eye_x_grad, left_eye_x_grad # Vertical, should not be mirrored
+
+            left_eye_y_grad = -(left_eye_y_grad - 0.5) + 0.5
+            right_eye_y_grad = -(right_eye_y_grad - 0.5) + 0.5
+
+            left_eye_y_grad = np.flip(left_eye_y_grad, axis=1)
+            right_eye_y_grad = np.flip(right_eye_y_grad, axis=1)
+
+            # Mirror the eyes themselves
+            left_eye_region, right_eye_region = right_eye_region, left_eye_region
+
+            left_eye_region = np.flip(left_eye_region, axis=1)
+            right_eye_region = np.flip(right_eye_region, axis=1)
+
+            # Mirror the width component of the target
+            #print("y: ", self.y)
+            self.mirrored_y = self.y.copy()
+            self.mirrored_y[0] = -(self.y[0] - 0.5) + 0.5
+            #print("mirrord_y: ", self.mirrored_y)
+
+
+            self.mirrored_X = np.stack((left_eye_region, left_eye_x_grad, left_eye_y_grad,
+                               right_eye_region, right_eye_x_grad, right_eye_y_grad), axis=2)
+
+            return self.mirrored_X, self.mirrored_y
         
         while not got_good_image:
         
