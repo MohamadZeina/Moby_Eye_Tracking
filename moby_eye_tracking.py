@@ -22,7 +22,7 @@ from keras.layers import (Input, concatenate, Conv2D, Dense, MaxPool2D,
 
 
 # Convenience functions
-def small_dot(tkinter_canvas, centre_x, centre_y, radius=5, fill="red"):
+def small_dot(tkinter_canvas, centre_x, centre_y, radius=10, fill="red"):
     """Given the centre point of a dot, this convenience function will draw a small dot with given radius"""
     
     tkinter_canvas.create_oval(centre_x - radius, centre_y - radius,
