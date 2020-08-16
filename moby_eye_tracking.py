@@ -81,7 +81,7 @@ def neural_model(dummy_sample, base_channels=8, dense_per_layer=50, conv_padding
     
     return model
 
-def extract_facial_features(frame, get_gradients=False, display=False):
+def extract_facial_features(frame, get_gradients=True, display=False):
     
     # Basic code for facial landmark extraction from webcam from:
     # https://elbruno.com/2019/05/29/vscode-lets-do-some-facerecognition-with-20-lines-in-python-3-n/    
@@ -105,11 +105,11 @@ def extract_facial_features(frame, get_gradients=False, display=False):
         grad_x = np.zeros(frame_copy.shape[:2], dtype=np.float)
         grad_y = np.zeros(frame_copy.shape[:2], dtype=np.float)
     
-        for i in range(border_height * 2):
-            grad_x[i, :] = i / (border_height * 2)
+        for i in range(frame_copy.shape[0]):
+            grad_x[i, :] = i / (frame_copy.shape[0])
         
-        for j in range(border_width * 2):
-            grad_y[:, j] = j / (border_width * 2)
+        for j in range(frame_copy.shape[1]):
+            grad_y[:, j] = j / (frame_copy.shape[1])
     
     try:
         # Locate the left eye
@@ -122,6 +122,9 @@ def extract_facial_features(frame, get_gradients=False, display=False):
                                      left_eye[0] - border_width: left_eye[0] + border_width]
             left_eye_y_grad = grad_y[left_eye[1] - border_height: left_eye[1] + border_height,
                                      left_eye[0] - border_width: left_eye[0] + border_width]
+            print("mean number from left eye x gradient is: ", np.mean(left_eye_x_grad))
+            print("mean number from left eye y gradient is: ", np.mean(left_eye_y_grad))
+            print("left eye centre is at: ", left_eye)
         
         left_eye_flattened = left_eye_region.reshape(1,-1)[0]
     
@@ -135,6 +138,9 @@ def extract_facial_features(frame, get_gradients=False, display=False):
                                       right_eye[0] - border_width: right_eye[0] + border_width]
             right_eye_y_grad = grad_y[right_eye[1] - border_height: right_eye[1] + border_height,
                                       right_eye[0] - border_width: right_eye[0] + border_width]
+            print("mean number from right eye x gradient is: ", np.mean(right_eye_x_grad))
+            print("mean number from right eye y gradient is: ", np.mean(right_eye_y_grad))
+            print("right centre is at: ", right_eye)
 
         if not get_gradients:
             left_eye_x_grad = np.zeros(left_eye_region.shape[:2])
@@ -224,7 +230,7 @@ def capture(counter, canvas, model, model_type, training_X, training_y, tk_width
             landmark_array, eyes_and_gradients, current_target, predicted_gaze, move_smoothly=False, randomise_dot=True):
     """Will capture an image, coordinate pair when the user is looking at the dot"""
     
-    path = "data/MZeina_5/"
+    path = "data/MZeina_6/"
     train_every = 1
         
     # print("About to learn...")
@@ -311,7 +317,7 @@ def train_and_preview(pretrained_model=None):
     
     # Dummy sample, to help initialising models
     (rgb_frame, dummy_features, 
-     landmark_array, eyes_and_gradients) = extract_facial_features(frame, True)
+     landmark_array, eyes_and_gradients) = extract_facial_features(frame)
     
     model_type = "neural net"
     
@@ -409,6 +415,13 @@ class ScreenshotGenerator(keras.utils.Sequence):
         # Ensures that if an image is picked without a succesfully detected face, 
         #  it looks for another random one to replace it
         got_good_image = False
+
+        if index % 2 != 0 and self.mirror_augment_all:
+            # Mirror previous sample and return it. For reference, eyes_and_gradients is:
+            #  left_eye_region, left_eye_x_grad, left_eye_y_grad,
+            #  right_eye_region, right_eye_x_grad, right_eye_y_grad
+
+            print("going to mirror images (not implemented yet)")
         
         while not got_good_image:
         
@@ -422,16 +435,16 @@ class ScreenshotGenerator(keras.utils.Sequence):
 
             coordinates = [float(coordinate) for coordinate in filename[1: -5].split(" ") if len(coordinate) != 0]
             
-            X = eyes_and_gradients
-            y = coordinates
+            self.X = eyes_and_gradients
+            self.y = coordinates
             
-            if len(X) == 0:
+            if len(self.X) == 0:
                 print("This image did not have a recognisable face, will pull a random one in its place")
                 index = random.randint(0, self.__len__())
             else:
                 got_good_image = True
         
-        return X, y
+        return self.X, self.y
     
     def __getitem__(self, batch):
 
