@@ -313,7 +313,10 @@ def train_and_preview(pretrained_model=None):
     captures_per_point = 5
     
     ########## Initialise Video Stream ##########
-    video_capture = cv2.VideoCapture(0)
+    #video_capture = cv2.VideoCapture(0)
+    video_capture = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
     
     # Extract webcam resolution
     ret, frame = video_capture.read()
@@ -369,7 +372,7 @@ def train_and_preview(pretrained_model=None):
         rgb_frame, landmark_array, eyes_and_gradients, predicted_gaze = predict_gaze(
             video_capture, webcam_resolution, tk_width, tk_height, model, model_type, canvas)
         
-        if counter % 8 == 0 and counter != 0:
+        if counter % 4 == 0 and counter != 0:
             canvas.delete("all")
             
             RFMO, current_target = capture(
