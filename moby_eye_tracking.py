@@ -366,7 +366,7 @@ class InteractiveTrainer():
     def __init__(self):
         print("Initialised interactive trainer object")
 
-    def capture(self, counter, canvas, model, model_type, training_X, training_y, tk_width, tk_height, 
+    def capture(self, canvas, model, model_type, training_X, training_y, tk_width, tk_height, 
             video_capture, rgb_frame, webcam_resolution, 
             landmark_array, eyes_and_gradients, current_target, predicted_gaze, move_smoothly=False, randomise_dot=True):
         """Will capture an image + coordinate pair when the user is looking at the dot"""
@@ -389,7 +389,7 @@ class InteractiveTrainer():
             
             plt.imsave(path + str(current_target) + ".jpg", rgb_frame)
             
-            if counter % train_every == 0:
+            if self.counter % train_every == 0:
                 model.fit(training_X, training_y)
             
         else:
@@ -398,14 +398,14 @@ class InteractiveTrainer():
         #canvas.delete("all")
         if move_smoothly:
             speed = 20
-            scaled_counter = (counter * speed) % (tk_width * tk_height)
+            scaled_counter = (self.counter * speed) % (tk_width * tk_height)
             target_x = (scaled_counter // tk_height * speed) % tk_width
             if (scaled_counter // tk_height)%2 == 0:
                 target_y = scaled_counter % tk_height
             else:
                 # reverse the direction for alternative lines, so it doesn't skip up to the top
                 target_y = tk_height - scaled_counter % tk_height
-            print("counter, scaled_counter, are :", counter, scaled_counter)
+            print("counter, scaled_counter, are :", self.counter, scaled_counter)
             print("about to move small circle to", target_x, target_y)
             small_dot(canvas, target_x, target_y)
             current_target = [target_x, target_y]
@@ -418,7 +418,7 @@ class InteractiveTrainer():
 
     def train(self, pretrained_model=None):
         ########## Universal Initialisation ##########
-        counter = 0
+        self.counter = 0
         captures_per_point = 5
         
         ########## Initialise Video Stream ##########
@@ -481,15 +481,15 @@ class InteractiveTrainer():
             rgb_frame, landmark_array, eyes_and_gradients, predicted_gaze = predict_gaze(
                 video_capture, webcam_resolution, tk_width, tk_height, model, model_type, canvas)
             
-            if counter % 4 == 0 and counter != 0:
+            if self.counter % 4 == 0 and self.counter != 0:
                 canvas.delete("all")
                 
                 RFMO, current_target = self.capture(
-                    counter, canvas, model, model_type, training_X, training_y, tk_width, tk_height, video_capture, 
+                    canvas, model, model_type, training_X, training_y, tk_width, tk_height, video_capture, 
                     rgb_frame, webcam_resolution, landmark_array, eyes_and_gradients, 
                     current_target, predicted_gaze, randomise_dot=True)
                     
-            counter += 1
+            self.counter += 1
             
             # Update GUI
             window.update_idletasks()
