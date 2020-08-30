@@ -176,7 +176,7 @@ def extract_facial_features(frame, downsample=0.5, get_gradients=True, display=F
                                        right_eye_region, right_eye_x_grad, right_eye_y_grad), axis=2)
     except IndexError:
         print("Could not extract eye regions, probably because face not detected")
-        return [], [], [], []
+        return [], [], [], [], []
         
     for face_landmarks in face_landmarks_list:
 
@@ -611,7 +611,7 @@ class ScreenshotGenerator(keras.utils.Sequence):
                         
             image = cv2.imread(file)
             
-            rgb_frame, everything_array, landmark_array, eyes_and_gradients = extract_facial_features(image, True)
+            rgb_frame, rgb_frame_copy, everything_array, landmark_array, eyes_and_gradients = extract_facial_features(image)
             #print("Extracted features in: ", time.time() - time_image_requested)
 
             coordinates = [float(coordinate) for coordinate in filename[1: -5].split(" ") if len(coordinate) != 0]
@@ -643,6 +643,8 @@ class ScreenshotGenerator(keras.utils.Sequence):
         
         time_to_get_batch = time.time() - time_batch_requested
         #print("Got batch in: ", time_to_get_batch)
+
+        #print("Shape of batch_X is: ", batch_X.shape)
 
         return batch_X, batch_y
 
