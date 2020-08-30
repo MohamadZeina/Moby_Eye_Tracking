@@ -9,6 +9,8 @@ import sys
 import matplotlib.pyplot as plt 
 import numpy as np
 
+from scipy.misc import imresize
+
 from tkinter import *
 
 from sklearn.ensemble import RandomForestRegressor
@@ -88,18 +90,21 @@ def neural_model(dummy_sample, base_channels=8, dense_per_layer=50, conv_padding
     
     return model
 
-def extract_facial_features(frame, get_gradients=True, display=False):
+def extract_facial_features(frame, downsample=0.5, get_gradients=True, display=False):
     
     # Basic code for facial landmark extraction from webcam from:
     # https://elbruno.com/2019/05/29/vscode-lets-do-some-facerecognition-with-20-lines-in-python-3-n/    
     try:
         rgb_frame = frame[:, :, ::-1].copy()
+        rgb_frame_copy = frame[:, :, ::-1].copy()
+        if downsample:
+            rgb_frame = imresize(rgb_frame, downsample)
     except TypeError:
         print("Problem extracting data from frame.")
         return [], [], [], []
 
     frame_copy = frame.copy()
-    bw_frame = np.mean(rgb_frame, axis=2)
+    bw_frame = np.mean(rgb_frame_copy, axis=2)
 
     face_landmarks_list = face_recognition.face_landmarks(rgb_frame)
     
@@ -121,6 +126,8 @@ def extract_facial_features(frame, get_gradients=True, display=False):
     try:
         # Locate the left eye
         left_eye = np.mean(np.array(face_landmarks_list[0]["left_eye"]), axis=0, dtype=int)
+        if downsample: left_eye = np.array(left_eye / downsample, int)
+
         left_eye_region = bw_frame[left_eye[1] - border_height: left_eye[1] + border_height,
                                    left_eye[0] - border_width: left_eye[0] + border_width]
 
@@ -137,6 +144,8 @@ def extract_facial_features(frame, get_gradients=True, display=False):
     
         # Locate the right eye
         right_eye = np.mean(np.array(face_landmarks_list[0]["right_eye"]), axis=0, dtype=int)
+        if downsample: right_eye = np.array(right_eye / downsample, int)
+
         right_eye_region = bw_frame[right_eye[1] - border_height: right_eye[1] + border_height,
                                     right_eye[0] - border_width: right_eye[0] + border_width]
 
@@ -202,7 +211,7 @@ def extract_facial_features(frame, get_gradients=True, display=False):
     
     # print(landmark_array[0].shape)
     
-    return rgb_frame, everything_array, landmark_array, eyes_and_gradients
+    return rgb_frame, rgb_frame_copy, everything_array, landmark_array, eyes_and_gradients
 
 def predict_gaze(video_capture, webcam_resolution,  
                  tk_width, tk_height, model, model_type, canvas):
@@ -373,7 +382,7 @@ class InteractiveTrainer():
     def predict_gaze(self):
     
         ret, frame = self.video_capture.read()
-        (self.rgb_frame, self.everything_array, 
+        (self.rgb_frame_downsampled, self.rgb_frame, self.everything_array, 
         self.landmark_array, self.eyes_and_gradients) = extract_facial_features(frame)
         
         try:
@@ -453,9 +462,9 @@ class InteractiveTrainer():
         
         ########## Initialise Video Stream ##########
         #video_capture = cv2.VideoCapture(0)
-        self.video_capture = cv2.VideoCapture(0)#, cv2.CAP_DSHOW)
-        #video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        #video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        self.video_capture = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        self.video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        self.video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         
         # Extract webcam resolution
         ret, frame = self.video_capture.read()
@@ -465,7 +474,7 @@ class InteractiveTrainer():
         ########## Initialise ML Model ##########
         
         # Dummy sample, to help initialising models
-        (self.rgb_frame, self.dummy_features, 
+        (self.rgb_frame_downsampled, self.rgb_frame, self.everything_array, 
         self.landmark_array, self.eyes_and_gradients) = extract_facial_features(frame)
     
         self.model_type = "neural net" # to do: can be moved to init method
@@ -510,7 +519,7 @@ class InteractiveTrainer():
             
             self.predict_gaze()
             
-            if self.counter % 4 == 0 and self.counter != 0:
+            if self.counter % 6 == 0 and self.counter != 0:
                 self.canvas.delete("all")
                 
                 self.capture()
