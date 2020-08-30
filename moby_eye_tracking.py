@@ -281,32 +281,6 @@ def capture(counter, canvas, model, model_type, training_X, training_y, tk_width
     
     return model, current_target
 
-def train_retrospectively(path_to_images, model):
-    
-    # Build data frame of past images, and the extract features
-    # For any non-small neural network, I should replace this technique with a generator
-    
-    training_X = []
-    training_y = []
-    counter = 0
-    path_to_images = "captures_one/"
-    
-    # Currently only looks in a single directory
-    files = os.listdir(path_to_images)
-    
-    for file in files:
-        print("About to process image number ", counter)
-        image = cv2.imread(path_to_images + file)
-        rgb_frame, everything_array, landmark_array, eyes_and_gradients = extract_facial_features(image)
-        coordinates = [float(coordinate) for coordinate in file[1: -5].split(" ") if len(coordinate) != 0]
-        
-        training_X.append(eyes_and_gradients)
-        training_y.append(coordinates)
-        
-        counter += 1
-                       
-    return training_X, training_y
-
 def train_and_preview(pretrained_model=None):
     ########## Universal Initialisation ##########
     counter = 0
@@ -314,9 +288,9 @@ def train_and_preview(pretrained_model=None):
     
     ########## Initialise Video Stream ##########
     #video_capture = cv2.VideoCapture(0)
-    video_capture = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-    video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    video_capture = cv2.VideoCapture(0)#, cv2.CAP_DSHOW)
+    #video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    #video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
     
     # Extract webcam resolution
     ret, frame = video_capture.read()
