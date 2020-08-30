@@ -363,31 +363,33 @@ def train_and_preview(pretrained_model=None):
 
 class InteractiveTrainer():
 
-    def __init__(self):
+    def __init__(self, randomise_dot=True, move_smoothly=False):
+        # Arguments to class variables
+        self.randomise_dot = randomise_dot
+        self.move_smoothly = move_smoothly
+
         print("Initialised interactive trainer object")
 
-    def capture(self, tk_width, tk_height, 
-            video_capture, rgb_frame, webcam_resolution, 
-            landmark_array, eyes_and_gradients, current_target, predicted_gaze, move_smoothly=False, randomise_dot=True):
+    def capture(self):
         """Will capture an image + coordinate pair when the user is looking at the dot"""
     
         path = "data/MZeina_6/" # to do: Move to class variable
         train_every = 1
             
         # print("About to learn...")
-        if len(landmark_array) != 0:
-            current_target = np.array(current_target) / np.array([tk_width, tk_height])
+        if len(self.landmark_array) != 0:
+            self.current_target = np.array(self.current_target) / np.array([self.tk_width, self.tk_height])
             
             if self.model_type == "neural net":
                 # Neural network can train on each sample at a time, unlike random forest
-                self.training_X = np.expand_dims(eyes_and_gradients, 0)
-                self.training_y = np.expand_dims(current_target, 0)
+                self.training_X = np.expand_dims(self.eyes_and_gradients, 0)
+                self.training_y = np.expand_dims(self.current_target, 0)
                 # training_X.append(eyes_and_gradients)
             else:
-                self.training_X.append(landmark_array[0])
-                self.training_y.append(current_target)
+                self.training_X.append(self.landmark_array[0])
+                self.training_y.append(self.current_target)
             
-            plt.imsave(path + str(current_target) + ".jpg", rgb_frame)
+            plt.imsave(path + str(self.current_target) + ".jpg", self.rgb_frame)
             
             if self.counter % train_every == 0:
                 self.model.fit(self.training_X, self.training_y)
@@ -396,24 +398,24 @@ class InteractiveTrainer():
             print("Face not detected, will not train on this sample")
     
         #self.canvas.delete("all")
-        if move_smoothly:
+        if self.move_smoothly:
             speed = 20
-            scaled_counter = (self.counter * speed) % (tk_width * tk_height)
-            target_x = (scaled_counter // tk_height * speed) % tk_width
-            if (scaled_counter // tk_height)%2 == 0:
-                target_y = scaled_counter % tk_height
+            scaled_counter = (self.counter * speed) % (self.tk_width * self.tk_height)
+            target_x = (scaled_counter // self.tk_height * speed) % self.tk_width
+            if (scaled_counter // self.tk_height)%2 == 0:
+                target_y = scaled_counter % self.tk_height
             else:
                 # reverse the direction for alternative lines, so it doesn't skip up to the top
-                target_y = tk_height - scaled_counter % tk_height
+                target_y = self.tk_height - scaled_counter % self.tk_height
             print("counter, scaled_counter, are :", self.counter, scaled_counter)
             print("about to move small circle to", target_x, target_y)
             small_dot(self.canvas, target_x, target_y)
-            current_target = [target_x, target_y]
-        elif randomise_dot:
-            current_target = random_dot(self.canvas, tk_width, tk_height)
+            self.current_target = [target_x, target_y]
+        elif self.randomise_dot:
+            self.current_target = random_dot(self.canvas, self.tk_width, self.tk_height)
         # print(random_width, random_height)
         
-        return self.model, current_target
+        return self.model, self.current_target
 
 
     def train(self, pretrained_model=None):
@@ -423,20 +425,20 @@ class InteractiveTrainer():
         
         ########## Initialise Video Stream ##########
         #video_capture = cv2.VideoCapture(0)
-        video_capture = cv2.VideoCapture(0)#, cv2.CAP_DSHOW)
+        self.video_capture = cv2.VideoCapture(0)#, cv2.CAP_DSHOW)
         #video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         #video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         
         # Extract webcam resolution
-        ret, frame = video_capture.read()
-        webcam_resolution = frame.shape[:2]
+        ret, frame = self.video_capture.read()
+        self.webcam_resolution = frame.shape[:2]
         # print(webcam_resolution) 
         
         ########## Initialise ML Model ##########
         
         # Dummy sample, to help initialising models
-        (rgb_frame, dummy_features, 
-        landmark_array, eyes_and_gradients) = extract_facial_features(frame)
+        (self.rgb_frame, self.dummy_features, 
+        self.landmark_array, self.eyes_and_gradients) = extract_facial_features(frame)
     
         self.model_type = "neural net" # to do: can be moved to init method
         
@@ -446,9 +448,9 @@ class InteractiveTrainer():
             # Random forest 
             RF = RandomForestRegressor(n_estimators=500, n_jobs=-1, warm_start=False)
             self.model = MultiOutputRegressor(RF)
-            self.model.fit(np.zeros_like(dummy_features), np.array([0.5, 0.5]).reshape(1, -1))
+            self.model.fit(np.zeros_like(self.dummy_features), np.array([0.5, 0.5]).reshape(1, -1))
         elif self.model_type == "neural net":
-            self.model = neural_model(eyes_and_gradients)
+            self.model = neural_model(self.eyes_and_gradients)
             self.model.summary()
             
         # To do:Train on existing pictures
@@ -462,10 +464,10 @@ class InteractiveTrainer():
         window.attributes("-fullscreen", True)
         
         window.update_idletasks() 
-        tk_width = window.winfo_width() 
-        tk_height = window.winfo_height()
+        self.tk_width = window.winfo_width() 
+        self.tk_height = window.winfo_height()
 
-        self.canvas = Canvas(window, width = tk_width, height = tk_height)
+        self.canvas = Canvas(window, width = self.tk_width, height = self.tk_height)
         self.canvas.pack()
         
         window.bind("<F11>", lambda event: window.attributes("-fullscreen",
@@ -474,20 +476,17 @@ class InteractiveTrainer():
         # window.bind("c", lambda event: capture(canvas, RFMO, tk_width, tk_height, video_capture, webcam_resolution, landmark_array, current_target, predicted_gaze))
         
         # Variables to store red dot target
-        current_target = random_dot(self.canvas, tk_width, tk_height)
+        self.current_target = random_dot(self.canvas, self.tk_width, self.tk_height)
         
         while True:
             
-            rgb_frame, landmark_array, eyes_and_gradients, predicted_gaze = predict_gaze(
-                video_capture, webcam_resolution, tk_width, tk_height, self.model, self.model_type, self.canvas)
+            self.rgb_frame, self.landmark_array, self.eyes_and_gradients, self.predicted_gaze = predict_gaze(
+                self.video_capture, self.webcam_resolution, self.tk_width, self.tk_height, self.model, self.model_type, self.canvas)
             
             if self.counter % 4 == 0 and self.counter != 0:
                 self.canvas.delete("all")
                 
-                RFMO, current_target = self.capture(
-                    tk_width, tk_height, video_capture, 
-                    rgb_frame, webcam_resolution, landmark_array, eyes_and_gradients, 
-                    current_target, predicted_gaze, randomise_dot=True)
+                self.RFMO, self.current_target = self.capture()
                     
             self.counter += 1
             
