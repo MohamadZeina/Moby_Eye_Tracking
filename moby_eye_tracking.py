@@ -370,6 +370,34 @@ class InteractiveTrainer():
 
         print("Initialised interactive trainer object")
 
+    def predict_gaze(self):
+    
+        ret, frame = self.video_capture.read()
+        (self.rgb_frame, self.everything_array, 
+        self.landmark_array, self.eyes_and_gradients) = extract_facial_features(frame)
+        
+        try:
+            if self.model_type == "neural net":
+                X = np.expand_dims(self.eyes_and_gradients, 0)
+                self.predicted_gaze = self.model.predict(X)[0]
+            else:
+                self.predicted_gaze = self.model.predict(self.everything_array)[0]
+        
+            print("Predicted gaze is: ", self.predicted_gaze)
+        except ValueError:
+            print("Could not predict, probably no face in image")
+            self.predicted_gaze = np.array([0., 0.])
+        
+        # Scale the prediction to webcam resolution
+        predicted_pixel = [self.predicted_gaze[0] * self.tk_width, self.predicted_gaze[1] * self.tk_height]
+        # print(predicted_pixel, predicted_gaze, webcam_resolution)
+        
+        # Display the prediction as a grey circle
+        small_dot(self.canvas, predicted_pixel[0], predicted_pixel[1], radius=5, fill="grey")
+    
+        return self.rgb_frame, self.everything_array, self.eyes_and_gradients, self.predicted_gaze
+
+
     def capture(self):
         """Will capture an image + coordinate pair when the user is looking at the dot"""
     
@@ -480,8 +508,7 @@ class InteractiveTrainer():
         
         while True:
             
-            self.rgb_frame, self.landmark_array, self.eyes_and_gradients, self.predicted_gaze = predict_gaze(
-                self.video_capture, self.webcam_resolution, self.tk_width, self.tk_height, self.model, self.model_type, self.canvas)
+            self.rgb_frame, self.landmark_array, self.eyes_and_gradients, self.predicted_gaze = self.predict_gaze()
             
             if self.counter % 4 == 0 and self.counter != 0:
                 self.canvas.delete("all")
