@@ -101,7 +101,7 @@ def extract_facial_features(frame, downsample=0.5, get_gradients=True, display=F
             rgb_frame = imresize(rgb_frame, downsample)
     except TypeError:
         print("Problem extracting data from frame.")
-        return [], [], [], []
+        return [], [], [], [], []
 
     frame_copy = frame.copy()
     bw_frame = np.mean(rgb_frame_copy, axis=2)
@@ -109,8 +109,8 @@ def extract_facial_features(frame, downsample=0.5, get_gradients=True, display=F
     face_landmarks_list = face_recognition.face_landmarks(rgb_frame)
     
     # Extract region around eyes, before green lines added. Uses face_recognition
-    border_height = 10
-    border_width = 15
+    border_height = 20
+    border_width = 30
     
     # Creat linear gradients to bundle with the eye data
     if get_gradients:
@@ -372,8 +372,9 @@ def train_and_preview(pretrained_model=None):
 
 class InteractiveTrainer():
 
-    def __init__(self, randomise_dot=True, move_smoothly=False):
+    def __init__(self, pretrained_model=None, randomise_dot=True, move_smoothly=False):
         # Arguments to class variables
+        self.pretrained_model = pretrained_model
         self.randomise_dot = randomise_dot
         self.move_smoothly = move_smoothly
 
@@ -405,7 +406,6 @@ class InteractiveTrainer():
         small_dot(self.canvas, predicted_pixel[0], predicted_pixel[1], radius=5, fill="grey")
     
         return
-
 
     def capture(self):
         """Will capture an image + coordinate pair when the user is looking at the dot"""
@@ -454,8 +454,7 @@ class InteractiveTrainer():
         
         return self.model, self.current_target
 
-
-    def train(self, pretrained_model=None):
+    def train(self):
         ########## Universal Initialisation ##########
         self.counter = 0
         captures_per_point = 5
@@ -479,15 +478,15 @@ class InteractiveTrainer():
     
         self.model_type = "neural net" # to do: can be moved to init method
         
-        if pretrained_model:
-            self.model = pretrained_model
+        if self.pretrained_model:
+            self.model = self.pretrained_model
         elif self.model_type == "random forest":
             # Random forest 
             RF = RandomForestRegressor(n_estimators=500, n_jobs=-1, warm_start=False)
             self.model = MultiOutputRegressor(RF)
             self.model.fit(np.zeros_like(self.dummy_features), np.array([0.5, 0.5]).reshape(1, -1))
         elif self.model_type == "neural net":
-            self.model = neural_model(self.eyes_and_gradients)
+            self.model = neural_model(self.eyes_and_gradients, 8, 100)
             self.model.summary()
             
         # To do:Train on existing pictures
