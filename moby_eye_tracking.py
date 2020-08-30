@@ -395,7 +395,7 @@ class InteractiveTrainer():
         # Display the prediction as a grey circle
         small_dot(self.canvas, predicted_pixel[0], predicted_pixel[1], radius=5, fill="grey")
     
-        return self.rgb_frame, self.everything_array, self.eyes_and_gradients, self.predicted_gaze
+        return
 
 
     def capture(self):
@@ -508,12 +508,12 @@ class InteractiveTrainer():
         
         while True:
             
-            self.rgb_frame, self.landmark_array, self.eyes_and_gradients, self.predicted_gaze = self.predict_gaze()
+            self.predict_gaze()
             
             if self.counter % 4 == 0 and self.counter != 0:
                 self.canvas.delete("all")
                 
-                self.RFMO, self.current_target = self.capture()
+                self.capture()
                     
             self.counter += 1
             
@@ -523,7 +523,6 @@ class InteractiveTrainer():
         return
 
      
-
 class ScreenshotGenerator(keras.utils.Sequence):
     
     def __init__(self, paths_to_images, batch_size=4, mirror_augment_all=False):
