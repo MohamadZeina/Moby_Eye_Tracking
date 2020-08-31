@@ -372,12 +372,19 @@ def train_and_preview(pretrained_model=None):
 
 class InteractiveTrainer():
 
-    def __init__(self, save_images=True, pretrained_model=None, randomise_dot=True, move_smoothly=False):
+    def __init__(self, save_images=True, save_path=None, pretrained_model=None, randomise_dot=True, move_smoothly=False):
         # Arguments to class variables
         self.save_images = save_images
+        self.save_path = save_path
         self.pretrained_model = pretrained_model
         self.randomise_dot = randomise_dot
         self.move_smoothly = move_smoothly
+
+        # Create directory to save images into
+        if not self.save_path:
+            self.save_path = "data/miscellaneous/"
+        if not os.path.exists(self.save_path):
+            os.makedirs(self.save_path)
 
         print("Initialised interactive trainer object")
 
@@ -411,7 +418,6 @@ class InteractiveTrainer():
     def capture(self):
         """Will capture an image + coordinate pair when the user is looking at the dot"""
     
-        path = "data/MZeina_6/" # to do: Move to class variable
         train_every = 1
             
         # print("About to learn...")
@@ -428,7 +434,7 @@ class InteractiveTrainer():
                 self.training_y.append(self.current_target)
 
             if self.save_images:
-                plt.imsave(path + str(self.current_target) + ".jpg", self.rgb_frame)
+                plt.imsave(self.save_path + str(self.current_target) + ".jpg", self.rgb_frame)
             
             if self.counter % train_every == 0:
                 self.model.fit(self.training_X, self.training_y)
