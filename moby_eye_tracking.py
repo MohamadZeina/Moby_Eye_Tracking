@@ -372,8 +372,9 @@ def train_and_preview(pretrained_model=None):
 
 class InteractiveTrainer():
 
-    def __init__(self, pretrained_model=None, randomise_dot=True, move_smoothly=False):
+    def __init__(self, save_images=True, pretrained_model=None, randomise_dot=True, move_smoothly=False):
         # Arguments to class variables
+        self.save_images = save_images
         self.pretrained_model = pretrained_model
         self.randomise_dot = randomise_dot
         self.move_smoothly = move_smoothly
@@ -425,8 +426,9 @@ class InteractiveTrainer():
             else:
                 self.training_X.append(self.landmark_array[0])
                 self.training_y.append(self.current_target)
-            
-            plt.imsave(path + str(self.current_target) + ".jpg", self.rgb_frame)
+
+            if self.save_images:
+                plt.imsave(path + str(self.current_target) + ".jpg", self.rgb_frame)
             
             if self.counter % train_every == 0:
                 self.model.fit(self.training_X, self.training_y)
