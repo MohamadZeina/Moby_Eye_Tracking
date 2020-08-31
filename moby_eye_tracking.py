@@ -372,8 +372,9 @@ def train_and_preview(pretrained_model=None):
 
 class InteractiveTrainer():
 
-    def __init__(self, save_images=True, save_path=None, pretrained_model=None, randomise_dot=True, move_smoothly=False):
+    def __init__(self, train_every=6, save_images=True, save_path=None, pretrained_model=None, randomise_dot=True, move_smoothly=False):
         # Arguments to class variables
+        self.train_every = train_every
         self.save_images = save_images
         self.save_path = save_path
         self.pretrained_model = pretrained_model
@@ -526,7 +527,7 @@ class InteractiveTrainer():
             
             self.predict_gaze()
             
-            if self.counter % 6 == 0 and self.counter != 0:
+            if self.counter % self.train_every == 0 and self.counter != 0:
                 self.canvas.delete("all")
                 
                 self.capture()
