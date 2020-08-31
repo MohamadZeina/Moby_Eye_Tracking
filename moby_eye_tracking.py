@@ -70,16 +70,16 @@ def neural_model(dummy_sample, base_channels=8, dense_per_layer=50, conv_padding
     p2 = Conv2D(base_channels * 4, 1, strides=2)(c22)
     if pooling_dropout: p2 = Dropout(pooling_dropout)(p2)
 
-    c31 = Conv2D(8, 3, padding=conv_padding)(p2)
-    c32 = Conv2D(8, 3, padding=conv_padding)(c31)
-    p3 = Conv2D(16, 1, strides=2)(c32)
-    if pooling_dropout:
-        p3 = Dropout(pooling_dropout)(p3)
+    c31 = Conv2D(base_channels * 4, 3, padding=conv_padding)(p2)
+    if spatial_dropout: c31 = SpatialDropout2D(spatial_dropout)(c31)
+    c32 = Conv2D(base_channels * 4, 3, padding=conv_padding)(c31)
+    if spatial_dropout: c32 = SpatialDropout2D(spatial_dropout)(c32)
+    p3 = Conv2D(base_channels * 8, 1, strides=2)(c32)
+    if pooling_dropout: p3 = Dropout(pooling_dropout)(p3)
     
     f1 = Flatten()(p3)
     d1 = Dense(dense_per_layer, activation="relu", kernel_regularizer=l2_reg)(f1)
-    if dense_dropout:
-        d1 = Dropout(dense_dropout)(d1)
+    if dense_dropout: d1 = Dropout(dense_dropout)(d1)
 
     d2 = Dense(dense_per_layer, activation="relu", kernel_regularizer=l2_reg)(d1)
     output = Dense(2)(d2)
