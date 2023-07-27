@@ -94,6 +94,8 @@ def extract_facial_features(frame, downsample=0.5, get_gradients=True, display=F
     
     # Basic code for facial landmark extraction from webcam from:
     # https://elbruno.com/2019/05/29/vscode-lets-do-some-facerecognition-with-20-lines-in-python-3-n/    
+    downsample = (int(frame.shape[1]*0.5), int(frame.shape[0]*0.5))
+  
     try:
         rgb_frame = frame[:, :, ::-1].copy()
         rgb_frame_copy = frame[:, :, ::-1].copy()
