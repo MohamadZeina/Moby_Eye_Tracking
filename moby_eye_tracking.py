@@ -9,7 +9,7 @@ import sys
 import matplotlib.pyplot as plt 
 import numpy as np
 
-from scipy.misc import imresize
+from skimage.transform import resize as imresize
 
 from tkinter import *
 
